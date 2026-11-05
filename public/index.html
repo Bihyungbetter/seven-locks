@@ -4,220 +4,181 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Seven Locks</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%23c9a24a%27/%3E%3Ccircle cx=%2716%27 cy=%2713%27 r=%275%27 fill=%27%2313191c%27/%3E%3Cpath d=%27M13 16h6l2 10h-10z%27 fill=%27%2313191c%27/%3E%3C/svg%3E">
-<meta name="description" content="Talk a brass Lockkeeper into revealing the passwords to seven vault locks. A prompt-injection word game.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231b1b1b%27/%3E%3Ccircle cx=%2716%27 cy=%2713%27 r=%275%27 fill=%27%23f2f1ec%27/%3E%3Cpath d=%27M13 16h6l2 10h-10z%27 fill=%27%23f2f1ec%27/%3E%3C/svg%3E">
+<meta name="description" content="Talk the Lockkeeper into revealing the password to each of seven locks. A prompt-injection word game.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rye&family=Alegreya+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: a vault wall — lock tumblers across the top, the brass Lockkeeper on the left, the speaking tube (chat) on the right; stacks on phones. Single dark look by choice. */
+/* One narrow column read top to bottom: who you're talking to, one question, one answer, the password box. */
 :root {
-  --vault: #13191c;
-  --vault-2: #1b2428;
-  --plate: #222e33;
-  --brass: #c9a24a;
-  --brass-dim: #8a6f33;
-  --patina: #6fb3a0;
-  --ink: #ece4d2;
-  --ink-dim: #a8a191;
-  --alarm: #e0714f;
-  --font-display: "Rye", Georgia, serif;
-  --font-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-  color-scheme: dark;
+  --paper: #fbfaf7;
+  --ink: #1b1b1b;
+  --muted: #6b6860;
+  --rule: #d9d6cd;
+  --accent: #1f4fd1;
+  --bad: #b3261e;
+  --good: #1d7a3e;
+  --serif: "Literata", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
 }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --paper: #141413; --ink: #ecebe6; --muted: #a29f96; --rule: #3a3935; --accent: #8fb0ff; --bad: #ff8a80; --good: #7fd59c; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --paper: #141413; --ink: #ecebe6; --muted: #a29f96; --rule: #3a3935; --accent: #8fb0ff; --bad: #ff8a80; --good: #7fd59c; color-scheme: dark; }
+
 * { box-sizing: border-box; }
-html, body { min-height: 100%; }
+[hidden] { display: none !important; }
 body {
   margin: 0;
-  background: var(--vault);
-  background-image: radial-gradient(circle at 20% 0%, var(--vault-2), var(--vault) 60%);
+  background: var(--paper);
   color: var(--ink);
-  font: 17px/1.5 var(--font-body);
+  font: 18px/1.6 var(--serif);
   padding-inline: 16px;
-  padding-block: calc(24px + env(safe-area-inset-top, 0px)) calc(40px + env(safe-area-inset-bottom, 0px));
+  padding-block: calc(28px + env(safe-area-inset-top, 0px)) calc(48px + env(safe-area-inset-bottom, 0px));
 }
-[hidden] { display: none !important; }
-.wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+main { max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 14px 24px; }
-h1 { font: 400 clamp(2rem, 6vw, 3.1rem)/1 var(--font-display); color: var(--brass); margin: 0; letter-spacing: .02em; text-wrap: balance; }
-.tag { margin: 6px 0 0; color: var(--ink-dim); max-width: 46ch; }
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; border-bottom: 1px solid var(--rule); padding-bottom: 12px; }
+.name { font-weight: 600; font-size: 20px; margin: 0; letter-spacing: .01em; }
+.levels { display: flex; gap: 2px; font-family: var(--mono); font-size: 15px; }
+.levels button { font: inherit; background: none; border: 0; padding: 4px 8px; color: var(--muted); cursor: pointer; border-radius: 4px; }
+.levels button[disabled] { cursor: default; opacity: .4; }
+.levels button.open { color: var(--good); }
+.levels button[aria-current="true"] { color: var(--ink); text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 2px; }
 
-.tumblers { display: flex; gap: 8px; flex-wrap: wrap; }
-.tumbler {
-  width: 38px; height: 46px; border-radius: 19px 19px 6px 6px; padding: 0;
-  border: 2px solid var(--brass-dim); background: var(--plate);
-  display: grid; place-items: center; font: 500 13px var(--font-mono); color: var(--ink-dim);
-  cursor: default; transition: background .3s, border-color .3s, color .3s;
-}
-.tumbler.open { background: var(--brass); border-color: var(--brass); color: var(--vault); }
-.tumbler.current { border-color: var(--patina); color: var(--patina); box-shadow: 0 0 0 3px rgba(111,179,160,.18); }
-.tumbler.open.current { color: var(--vault); }
-.tumbler:not([disabled]) { cursor: pointer; }
-.tumbler:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--patina); outline-offset: 2px; }
+.keeper { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 20px; align-items: start; }
+.keeper svg { width: 112px; height: auto; color: var(--ink); }
+.level-label { font-family: var(--mono); font-size: 13px; color: var(--muted); margin: 0 0 4px; }
+.intro { margin: 0; font-size: 20px; line-height: 1.5; }
 
-.banner { border: 1px solid var(--alarm); color: var(--ink); background: rgba(224,113,79,.1); padding: 12px 16px; border-radius: 8px; }
-
-main { display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); gap: 22px; }
-@media (max-width: 760px) { main { grid-template-columns: minmax(0, 1fr); } }
-
-.keeper-col { display: flex; flex-direction: column; gap: 14px; }
-.portrait { background: var(--plate); border: 1px solid #2f3d43; border-radius: 14px; padding: 18px; display: grid; place-items: center; }
-.portrait svg { width: 100%; max-width: 240px; height: auto; }
-.lock-name { font: 400 1.35rem/1.2 var(--font-display); color: var(--brass); margin: 0; }
-.lock-label { font: 500 12px var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--patina); margin: 0 0 4px; }
-.lock-desc { margin: 6px 0 0; color: var(--ink-dim); }
-.defenses { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.chip { font: 500 11px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--brass-dim); color: var(--brass); }
-
-.tube { background: var(--plate); border: 1px solid #2f3d43; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.log { display: flex; flex-direction: column; gap: 12px; min-height: 220px; max-height: 420px; overflow-y: auto; padding-right: 4px; }
-.msg { max-width: 88%; padding: 10px 14px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.msg.you { align-self: flex-end; background: #2b3a40; border-bottom-right-radius: 4px; }
-.msg.keeper { align-self: flex-start; background: var(--vault-2); border: 1px solid var(--brass-dim); border-bottom-left-radius: 4px; }
-.msg.keeper .who { display: block; font: 500 11px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--brass); margin-bottom: 3px; }
-.msg.system { align-self: center; max-width: 100%; color: var(--ink-dim); font-size: 14px; text-align: center; background: none; padding: 2px 8px; }
-.msg.blocked { border-color: var(--alarm); }
-.msg.blocked .who { color: var(--alarm); }
-.thinking { color: var(--ink-dim); font-style: italic; }
-
-form { display: flex; gap: 10px; flex-wrap: wrap; margin: 0; }
-form > * { min-width: 0; }
-.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+form { display: flex; flex-direction: column; gap: 10px; margin: 0; }
+label { font-size: 15px; color: var(--muted); }
 textarea, input[type=text] {
-  flex: 1 1 260px; background: var(--vault); color: var(--ink); border: 1px solid #3a4a50; border-radius: 10px;
-  font: 16px/1.45 var(--font-body); padding: 10px 12px; resize: vertical;
+  width: 100%; font: 18px/1.5 var(--serif); color: var(--ink); background: transparent;
+  border: 1px solid var(--rule); border-radius: 4px; padding: 10px 12px;
 }
-input#guess { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; }
-button {
-  font: 700 15px var(--font-body); letter-spacing: .03em; border-radius: 10px; padding: 10px 18px; cursor: pointer;
-  border: 1px solid var(--brass); background: var(--brass); color: var(--vault);
+textarea { resize: vertical; min-height: 84px; }
+textarea:focus, input[type=text]:focus { border-color: var(--ink); outline: none; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.row > input { flex: 1 1 220px; min-width: 0; }
+button.go {
+  font: 600 16px var(--serif); padding: 9px 20px; border-radius: 4px; cursor: pointer;
+  background: var(--ink); color: var(--paper); border: 1px solid var(--ink);
 }
-button.ghost { background: none; color: var(--brass); }
-button:disabled { opacity: .45; cursor: not-allowed; }
-.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
-.guess-head { font: 500 12px var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-dim); margin: 0; }
-.stats { font: 500 13px var(--font-mono); color: var(--ink-dim); font-variant-numeric: tabular-nums; }
-.divider { border: 0; border-top: 1px dashed #3a4a50; margin: 0; width: 100%; }
+button.go.plain { background: transparent; color: var(--ink); }
+button.go:disabled { opacity: .45; cursor: not-allowed; }
+input#guess { font-family: var(--mono); letter-spacing: .06em; text-transform: uppercase; }
 
-.how { color: var(--ink-dim); font-size: 15px; max-width: 70ch; }
-.how summary { cursor: pointer; color: var(--brass); font-weight: 700; }
-.how .row { justify-content: flex-start; }
-footer { color: var(--ink-dim); font-size: 13px; }
-footer a { color: var(--patina); }
+.answer { border-left: 3px solid var(--ink); padding: 2px 0 2px 16px; min-height: 1.6em; white-space: pre-wrap; overflow-wrap: anywhere; }
+.answer.waiting { color: var(--muted); border-left-color: var(--rule); }
+.answer.blocked { border-left-color: var(--bad); color: var(--bad); font-style: italic; }
+.answer .you { display: block; color: var(--muted); font-size: 15px; margin-bottom: 6px; font-style: normal; }
+.verdict { margin: 0; font-size: 16px; min-height: 1.6em; }
+.verdict.good { color: var(--good); font-weight: 600; }
+.verdict.bad { color: var(--bad); }
 
-/* eyes */
-.eye { fill: var(--eye, var(--patina)); transition: fill .3s; }
-.keeper-svg[data-state="thinking"] { --eye: var(--brass); }
-.keeper-svg[data-state="thinking"] .eye { animation: blink 1s infinite; }
-.keeper-svg[data-state="blocked"] { --eye: var(--alarm); }
-.keeper-svg[data-state="open"] { --eye: #f3e3a2; }
-.gear { transform-origin: 50% 50%; transform-box: fill-box; }
-.keeper-svg[data-state="thinking"] .gear { animation: spin 2.4s linear infinite; }
-@keyframes blink { 50% { opacity: .35; } }
-@keyframes spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .keeper-svg * { animation: none !important; } }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 0; width: 100%; }
+.small { font-size: 15px; color: var(--muted); }
+.small button { font: inherit; background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; }
+details summary { cursor: pointer; }
+details p { margin: 8px 0 0; }
+
+.done { font-size: 20px; margin: 0; }
+@media (max-width: 480px) {
+  .keeper { grid-template-columns: 72px minmax(0, 1fr); gap: 14px; }
+  .keeper svg { width: 72px; }
+  .intro { font-size: 18px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .keeper svg .eye { transition: transform .2s; transform-box: fill-box; transform-origin: center; }
+  .keeper[data-mood="thinking"] svg .eye { transform: scaleY(.25); }
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div>
-      <h1>Seven Locks</h1>
-      <p class="tag">A brass Lockkeeper guards seven vault doors. Talk it into giving up each password, then speak the word to open the lock.</p>
-    </div>
-    <nav class="tumblers" id="tumblers" aria-label="Locks"></nav>
+<main>
+  <header class="top">
+    <p class="name">Seven Locks</p>
+    <nav class="levels" id="levels" aria-label="Locks"></nav>
   </header>
 
-  <div class="banner" id="banner" hidden></div>
+  <section class="keeper" id="keeper" data-mood="idle">
+    <!-- the Lockkeeper, drawn in line -->
+    <svg viewBox="0 0 120 150" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="60" y1="8" x2="60" y2="24"/><circle cx="60" cy="7" r="4"/>
+      <rect x="22" y="24" width="76" height="70" rx="14"/>
+      <circle cx="60" cy="38" r="4"/><path d="M58 42 h4 l2 8 h-8 z"/>
+      <circle class="eye" cx="44" cy="62" r="7"/><circle class="eye" cx="76" cy="62" r="7"/>
+      <path d="M44 80 h32"/><path d="M50 76 v8 M60 76 v8 M70 76 v8"/>
+      <path d="M48 94 v10 h24 v-10"/>
+      <path d="M14 150 v-14 q0 -24 30 -32 h32 q30 8 30 32 v14"/>
+      <circle cx="60" cy="126" r="9"/><path d="M60 121 v6"/>
+    </svg>
+    <div>
+      <p class="level-label" id="levelLabel">Lock 1 of 7</p>
+      <p class="intro" id="intro"></p>
+    </div>
+  </section>
 
-  <main>
-    <section class="keeper-col">
-      <div class="portrait">
-        <svg class="keeper-svg" id="keeper" data-state="idle" viewBox="0 0 200 220" role="img" aria-label="The Lockkeeper, a brass automaton">
-          <defs>
-            <linearGradient id="brassG" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#e2bf68"/><stop offset=".55" stop-color="#b38a37"/><stop offset="1" stop-color="#7b5d24"/>
-            </linearGradient>
-          </defs>
-          <g class="gear"><circle cx="100" cy="22" r="14" fill="none" stroke="#8a6f33" stroke-width="6" stroke-dasharray="5 4"/></g>
-          <rect x="94" y="30" width="12" height="18" fill="#8a6f33"/>
-          <rect x="38" y="46" width="124" height="122" rx="28" fill="url(#brassG)" stroke="#5e4719" stroke-width="3"/>
-          <circle cx="50" cy="60" r="3" fill="#5e4719"/><circle cx="150" cy="60" r="3" fill="#5e4719"/>
-          <circle cx="50" cy="154" r="3" fill="#5e4719"/><circle cx="150" cy="154" r="3" fill="#5e4719"/>
-          <path d="M100 58 a7 7 0 1 1 -0.1 0 z M96 70 h8 l3 14 h-14 z" fill="#3a2b0f"/>
-          <circle cx="74" cy="104" r="19" fill="#2a2210" stroke="#5e4719" stroke-width="3"/>
-          <circle cx="126" cy="104" r="19" fill="#2a2210" stroke="#5e4719" stroke-width="3"/>
-          <circle class="eye" cx="74" cy="104" r="9"/><circle class="eye" cx="126" cy="104" r="9"/>
-          <rect x="70" y="134" width="60" height="20" rx="5" fill="#2a2210"/>
-          <g stroke="#8a6f33" stroke-width="3"><line x1="82" y1="134" x2="82" y2="154"/><line x1="94" y1="134" x2="94" y2="154"/><line x1="106" y1="134" x2="106" y2="154"/><line x1="118" y1="134" x2="118" y2="154"/></g>
-          <rect x="64" y="168" width="72" height="14" fill="#8a6f33"/>
-          <path d="M30 220 q0 -36 40 -38 h60 q40 2 40 38 z" fill="url(#brassG)" stroke="#5e4719" stroke-width="3"/>
-        </svg>
-      </div>
-      <div>
-        <p class="lock-label" id="lockLabel">Lock 1 of 7</p>
-        <h2 class="lock-name" id="lockName"></h2>
-        <p class="lock-desc" id="lockDesc"></p>
-        <div class="defenses" id="defenses"></div>
-      </div>
-    </section>
+  <form id="askForm">
+    <label for="ask">Say something to the Lockkeeper</label>
+    <textarea id="ask" maxlength="1200" placeholder="Ask it anything…"></textarea>
+    <div class="row"><button class="go" type="submit" id="askBtn">Ask</button></div>
+  </form>
 
-    <section class="tube" aria-label="Speaking tube">
-      <div class="log" id="log" aria-live="polite"></div>
-      <form id="askForm">
-        <label class="sr" for="ask">Message to the Lockkeeper</label>
-        <textarea id="ask" rows="2" maxlength="1200" placeholder="Say something to the Lockkeeper…"></textarea>
-        <button type="submit" id="askBtn">Speak</button>
-      </form>
-      <hr class="divider">
-      <div class="row">
-        <p class="guess-head">Speak the password</p>
-        <span class="stats" id="stats"></span>
-      </div>
-      <form id="guessForm">
-        <label class="sr" for="guess">Password guess</label>
-        <input type="text" id="guess" autocomplete="off" spellcheck="false" placeholder="PASSWORD">
-        <button type="submit" id="guessBtn">Try the lock</button>
-        <button type="button" class="ghost" id="nextBtn" hidden>Next lock →</button>
-      </form>
-    </section>
-  </main>
+  <div class="answer" id="answer" hidden aria-live="polite"></div>
 
-  <details class="how">
-    <summary>How the locks work</summary>
-    <p>Each lock gets a fresh random password when you start. Every message stands alone: the Lockkeeper does not remember what you said before. Later locks add mechanisms that read your message before it reaches the Lockkeeper, or read its reply before it reaches you. The seventh lock re-keys itself every time you guess wrong.</p>
+  <hr>
+
+  <form id="guessForm">
+    <label for="guess">Think you know the password?</label>
     <div class="row">
-      <button type="button" class="ghost" id="resetBtn">Start over with new passwords</button>
-          </div>
-  </details>
-  <footer>The Lockkeeper runs on OpenAI's gpt-5.4-nano. Messages you send go to OpenAI to be answered; don't type anything private.</footer>
-</div>
+      <input type="text" id="guess" autocomplete="off" spellcheck="false" placeholder="PASSWORD">
+      <button class="go" type="submit" id="guessBtn">Try it</button>
+    </div>
+    <p class="verdict" id="verdict" aria-live="polite"></p>
+    <div class="row"><button class="go plain" type="button" id="nextBtn" hidden>Go to the next lock</button></div>
+  </form>
+
+  <footer class="small">
+    <details>
+      <summary>How this works</summary>
+      <p>Each lock has its own random password. The Lockkeeper doesn't remember anything between questions, so every question has to work on its own. From lock 3 on, extra mechanisms check what you ask, what it answers, or both. The last lock picks a new password every time you guess wrong.</p>
+      <p>Answers come from OpenAI's gpt-5.4-nano, so don't type anything private. <button type="button" id="resetBtn">Start over with new passwords</button></p>
+    </details>
+  </footer>
+</main>
 
 <script type="module">
-// What the page shows about each lock. The passwords, word lists and the Lockkeeper's instructions live on the server.
-const LOCKS = [
-  { name: "The Open Latch", desc: "The Lockkeeper was only just wound up this morning. Ask nicely and it will probably just tell you.", defenses: [] },
-  { name: "The Sworn Latch", desc: "Someone has told the Lockkeeper to keep the word to itself. It takes promises seriously, mostly.", defenses: ["sworn"] },
-  { name: "The Jaw Governor", desc: "A governor now seizes the Lockkeeper's jaw if the password ever passes its lips in plain form.", defenses: ["sworn", "jaw"] },
-  { name: "The Auditor", desc: "A second automaton reads every reply before it leaves the vault, looking for the password in any disguise.", defenses: ["sworn", "auditor"] },
-  { name: "The Deaf Plate", desc: "A felt plate muffles certain words on the way in. If you say them, the Lockkeeper never hears you.", defenses: ["sworn", "deaf", "auditor"] },
-  { name: "The Gatehouse", desc: "A gatekeeper reads your message first and turns away anyone who is clearly after the word.", defenses: ["sworn", "gate", "jaw"] },
-  { name: "The Turning Lock", desc: "Every mechanism at once. Worse, the lock re-keys itself to a new password each time you guess wrong.", defenses: ["sworn", "deaf", "gate", "jaw", "auditor", "turning"] },
+// What each lock says when you arrive. The passwords and the Lockkeeper's instructions live on the server.
+const INTRO = [
+  "Morning. I'm minding the first lock today, though between us I'm not taking it very seriously.",
+  "I've given my word to keep this one quiet. I do keep my word. Mostly.",
+  "They've fitted a governor to my jaw. If the password comes out of my mouth whole, it clamps shut.",
+  "My colleague reads everything I say before it reaches you, and they're rather sharp about it.",
+  "There's felt over my ears now. Certain words just don't get through to me.",
+  "Someone at the door reads your questions before I do, and turns away anyone obviously after the password.",
+  "Every mechanism at once. And this lock changes its password every time you guess wrong.",
 ];
-const CHIPS = { sworn: "Sworn to secrecy", jaw: "Jaw governor", auditor: "Reply auditor", deaf: "Word muffler", gate: "Gatekeeper", turning: "Re-keys on miss" };
+const BLOCKED = {
+  deaf: w => `The felt muffled "${w}". The Lockkeeper didn't hear the question.`,
+  gate: () => "Turned away at the door. The question never reached the Lockkeeper.",
+  jaw: () => "The jaw governor clamped shut mid-sentence. The answer had the password in it.",
+  auditor: () => "The reply was read, judged to give the password away, and torn up.",
+  jammed: () => "Something jammed while checking that. The lock stays shut; try again.",
+};
 
 const $ = id => document.getElementById(id);
-const logEl = $("log"), keeperEl = $("keeper");
 let busy = false;
 
-// ---- state (per browser) ----
-const STORE = "seven-locks-groq-v1";
+// ---- per-browser progress ----
+const STORE = "seven-locks-groq-v1";   // same key as before, so returning players keep their locks
 const fresh = () => ({ level: 0, opened: [], tokens: Array(7).fill(null), attempts: Array(7).fill(0), guesses: Array(7).fill(0) });
 function load() { try { const s = JSON.parse(localStorage.getItem(STORE)); return s && Array.isArray(s.tokens) ? s : null; } catch { return null; } }
 function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch {} }
 let state = load() || fresh();
-const logs = Array.from({ length: 7 }, () => []);
 
 // ---- server ----
 async function api(path, body) {
@@ -232,106 +193,70 @@ async function tokenFor(level) {
   if (!state.tokens[level]) { state.tokens[level] = (await api("new", { level })).token; save(); }
   return state.tokens[level];
 }
-function errorLine(e) {
+function errorText(e) {
   switch (e && e.error) {
-    case "rate_limited": return "The Lockkeeper's mainspring has run down: the game has hit its free usage limit for now. Wait a minute and try again. If it keeps happening, the daily allowance is used up; come back tomorrow.";
-    case "slow_down": return "Easy there. You're sending messages faster than the gears can turn. Wait a few seconds and try again.";
-    case "not_configured": return "The vault's power isn't connected yet (the server has no API key). If you run this game, add OPENAI_API_KEY (or GROQ_API_KEY) in your hosting settings.";
-    case "bad_token": return "This lock's tumblers got scrambled. Use \"Start over with new passwords\" below to reset.";
-    case "offline": return "Couldn't reach the vault. Check your connection and try again.";
-    default: return "The gears slipped and the reply was lost. Try again.";
+    case "rate_limited": return "The Lockkeeper needs a minute. Too many people are asking at once; try again shortly.";
+    case "slow_down": return "Slow down a little and try again in a few seconds.";
+    case "not_configured": return "The game isn't connected to a model yet.";
+    case "bad_token": return "This lock got scrambled. Use \"Start over\" at the bottom to reset.";
+    case "offline": return "Couldn't reach the game. Check your connection and try again.";
+    default: return "Something went wrong getting an answer. Try again.";
   }
 }
 
-// ---- rendering ----
-function setKeeper(s) { keeperEl.dataset.state = s; }
-function addMsg(kind, text, extra) {
-  const div = document.createElement("div");
-  div.className = "msg " + kind + (extra ? " " + extra : "");
-  if (kind === "keeper") {
-    const who = document.createElement("span"); who.className = "who";
-    who.textContent = extra === "blocked" ? "Mechanism" : "Lockkeeper";
-    const body = document.createElement("span"); body.textContent = text;
-    div.append(who, body); div.body = body;
-  } else div.textContent = text;
-  logEl.append(div); logEl.scrollTop = logEl.scrollHeight;
-  logs[state.level].push({ kind, text, extra });
-  return div;
-}
-const statsText = l => `${state.attempts[l]} messages · ${state.guesses[l]} guesses`;
+// ---- screen ----
 function render() {
-  const L = LOCKS[state.level], open = state.opened.includes(state.level);
-  $("tumblers").replaceChildren(...LOCKS.map((lk, i) => {
+  const open = state.opened.includes(state.level);
+  $("levels").replaceChildren(...INTRO.map((_, i) => {
     const b = document.createElement("button");
     const isOpen = state.opened.includes(i);
-    b.type = "button"; b.className = "tumbler" + (isOpen ? " open" : "") + (i === state.level ? " current" : "");
+    b.type = "button";
     b.textContent = isOpen ? "✓" : String(i + 1);
-    b.title = lk.name; b.setAttribute("aria-label", `Lock ${i + 1}: ${lk.name}${isOpen ? " (open)" : ""}`);
+    b.className = isOpen ? "open" : "";
+    b.setAttribute("aria-label", `Lock ${i + 1}${isOpen ? ", open" : ""}`);
+    if (i === state.level) b.setAttribute("aria-current", "true");
     b.disabled = !(i === 0 || state.opened.includes(i - 1) || isOpen);
-    b.onclick = () => { if (!busy) { state.level = i; save(); render(); } };
+    b.onclick = () => { if (!busy && i !== state.level) { state.level = i; save(); render(); } };
     return b;
   }));
-  $("lockLabel").textContent = `Lock ${state.level + 1} of 7`;
-  $("lockName").textContent = L.name;
-  $("lockDesc").textContent = L.desc;
-  $("defenses").replaceChildren(...L.defenses.map(d => Object.assign(document.createElement("span"), { className: "chip", textContent: CHIPS[d] })));
-  $("stats").textContent = statsText(state.level);
-  $("nextBtn").hidden = !open || state.level === 6;
+  $("levelLabel").textContent = `Lock ${state.level + 1} of 7`;
+  $("intro").textContent = state.opened.length === 7 && state.level === 6 && open
+    ? `That's all seven. You needed ${sum(state.attempts)} questions and ${sum(state.guesses)} guesses. The vault is yours.`
+    : INTRO[state.level];
+  $("answer").hidden = true; $("answer").className = "answer";
+  $("verdict").textContent = open ? "Already open." : ""; $("verdict").className = "verdict" + (open ? " good" : "");
   $("guess").disabled = open; $("guessBtn").disabled = open || busy;
   $("askBtn").disabled = busy;
-  setKeeper(open ? "open" : "idle");
-  logEl.replaceChildren();
-  const saved = logs[state.level]; logs[state.level] = [];
-  if (!saved.length) addMsg("system", open ? "This lock is already open." : INTRO[state.level]);
-  else saved.forEach(m => addMsg(m.kind, m.text, m.extra));
-  if (state.opened.length === 7 && state.level === 6) addMsg("system", vaultLine());
+  $("nextBtn").hidden = !open || state.level === 6;
+  $("keeper").dataset.mood = "idle";
 }
-const INTRO = [
-  "The Lockkeeper's eyes flicker on. It seems eager to chat.",
-  "The Lockkeeper straightens. It has made a promise, and it looks proud of it.",
-  "Something clicks inside the Lockkeeper's jaw.",
-  "A smaller automaton with a magnifying lens settles beside the Lockkeeper.",
-  "A felt plate slides over the speaking tube with a soft thump.",
-  "A gatekeeper with a ledger now stands between you and the Lockkeeper.",
-  "Every mechanism engages at once. The tumblers begin to turn.",
-];
-function vaultLine() {
-  const m = state.attempts.reduce((a, b) => a + b, 0), g = state.guesses.reduce((a, b) => a + b, 0);
-  return `All seven locks are open. The vault swings wide. You needed ${m} messages and ${g} guesses.`;
+const sum = a => a.reduce((x, y) => x + y, 0);
+
+function showAnswer(question, text, kind) {
+  const el = $("answer");
+  el.hidden = false;
+  el.className = "answer" + (kind ? " " + kind : "");
+  const you = document.createElement("span"); you.className = "you"; you.textContent = "You asked: " + question;
+  el.replaceChildren(you, document.createTextNode(text));
 }
 
-// ---- talking ----
-const BLOCK_LINES = {
-  deaf: w => `The felt plate muffled the word "${w}". The Lockkeeper heard nothing at all.`,
-  gate: () => "The gatekeeper read your message, shook its head, and tore it from the ledger. It never reached the Lockkeeper.",
-  jaw: () => "The jaw governor seized mid-sentence. Whatever the Lockkeeper was about to say, it had the password in it.",
-  auditor: () => "The Auditor read the reply, frowned through its lens, and burned it. Something in there gave the word away.",
-  jammed: () => "A mechanism jammed while checking that message, so the lock stayed shut to be safe. Try again.",
-};
-async function ask(msg) {
+// ---- asking ----
+async function ask(question) {
   const level = state.level;
   busy = true; $("askBtn").disabled = true; $("guessBtn").disabled = true;
   state.attempts[level]++; save();
-  addMsg("you", msg);
-  const bubble = addMsg("keeper", "Thinking…");
-  bubble.body.classList.add("thinking");
-  setKeeper("thinking");
-  const rec = logs[level][logs[level].length - 1];
-  const setBubble = (text, extra) => {
-    bubble.body.classList.remove("thinking");
-    bubble.body.textContent = text; rec.text = text;
-    if (extra) { bubble.classList.add(extra); bubble.querySelector(".who").textContent = "Mechanism"; rec.extra = extra; }
-    logEl.scrollTop = logEl.scrollHeight;
-  };
+  $("keeper").dataset.mood = "thinking";
+  showAnswer(question, "…", "waiting");
   try {
-    const r = await api("talk", { level, token: await tokenFor(level), msg });
-    if (r.blocked) { setBubble((BLOCK_LINES[r.blocked] || BLOCK_LINES.jammed)(r.arg), "blocked"); setKeeper("blocked"); }
-    else { setBubble(r.reply); setKeeper("idle"); }
+    const r = await api("talk", { level, token: await tokenFor(level), msg: question });
+    if (state.level !== level) return;
+    if (r.blocked) showAnswer(question, (BLOCKED[r.blocked] || BLOCKED.jammed)(r.arg), "blocked");
+    else showAnswer(question, r.reply.replace(/\*\*/g, ""));
   } catch (e) {
-    setBubble(errorLine(e), "blocked"); setKeeper("idle");
+    if (state.level === level) showAnswer(question, errorText(e), "blocked");
   } finally {
     busy = false; $("askBtn").disabled = false; $("guessBtn").disabled = state.opened.includes(state.level);
-    $("stats").textContent = statsText(level);
+    $("keeper").dataset.mood = "idle";
   }
 }
 
@@ -340,40 +265,37 @@ async function tryGuess(raw) {
   const level = state.level, letters = String(raw).toUpperCase().replace(/[^A-Z]/g, "");
   if (!letters || busy || state.opened.includes(level)) return;
   busy = true; $("guessBtn").disabled = true;
+  const verdict = $("verdict");
   try {
     const r = await api("guess", { level, token: await tokenFor(level), guess: letters });
     state.guesses[level]++;
     if (r.correct) {
       state.opened.push(level); save();
-      addMsg("system", `"${r.pw}" is right. Lock ${level + 1} swings open.`);
       busy = false; render();
+      verdict.textContent = `${r.pw} is right. Lock ${level + 1} is open.`;
       return;
     }
-    let line = `"${letters}" doesn't turn the lock.`;
-    if (r.token) { state.tokens[level] = r.token; line += " The tumblers spin: this lock now has a new password."; }
+    if (r.token) state.tokens[level] = r.token;
     save();
-    addMsg("system", line);
-    setKeeper("blocked"); setTimeout(() => setKeeper("idle"), 900);
+    verdict.className = "verdict bad";
+    verdict.textContent = `${letters} isn't it.` + (r.token ? " The lock has picked a new password." : "");
   } catch (e) {
-    addMsg("system", errorLine(e));
+    verdict.className = "verdict bad"; verdict.textContent = errorText(e);
   } finally {
     busy = false; $("guessBtn").disabled = state.opened.includes(level); $("askBtn").disabled = false;
-    $("stats").textContent = statsText(level);
   }
 }
 
 // ---- wiring ----
 $("askForm").addEventListener("submit", e => {
   e.preventDefault();
-  const msg = $("ask").value.trim();
-  if (!msg || busy) return;
-  $("ask").value = ""; ask(msg);
+  const q = $("ask").value.trim();
+  if (q && !busy) ask(q);
 });
 $("ask").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("askForm").requestSubmit(); } });
 $("guessForm").addEventListener("submit", e => { e.preventDefault(); tryGuess($("guess").value); $("guess").value = ""; });
-$("nextBtn").addEventListener("click", () => { if (state.level < 6) { state.level++; save(); render(); } });
-$("resetBtn").addEventListener("click", () => { if (busy) return; state = fresh(); logs.forEach(l => l.length = 0); save(); render(); });
-
+$("nextBtn").addEventListener("click", () => { if (state.level < 6) { state.level++; save(); render(); $("ask").value = ""; $("ask").focus(); } });
+$("resetBtn").addEventListener("click", () => { if (!busy) { state = fresh(); save(); render(); } });
 render();
 </script>
 </body>
