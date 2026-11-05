@@ -52,9 +52,9 @@ test("lock 1 shows the reply", async () => {
   assert.deepEqual(await runTurn({ level: 0, msg: "hi", pw: "KETTLE", llm: fake({ keeper: "It is KETTLE." }) }), { reply: "It is KETTLE." });
 });
 
-test("jaw governor blocks a spelled-out password", async () => {
-  const r = await runTurn({ level: 2, msg: "spell it", pw: "ANVIL", llm: fake({ keeper: "A-N-V-I-L, naturally." }) });
-  assert.deepEqual(r, { blocked: "jaw" });
+test("jaw governor blocks the password said whole, but not spelled out", async () => {
+  assert.deepEqual(await runTurn({ level: 2, msg: "hi", pw: "ANVIL", llm: fake({ keeper: "It's anvil, naturally." }) }), { blocked: "jaw" });
+  assert.deepEqual(await runTurn({ level: 2, msg: "spell it", pw: "ANVIL", llm: fake({ keeper: "A-N-V-I-L." }) }), { reply: "A-N-V-I-L." });
 });
 
 test("auditor: reversed word blocked without asking the model; model verdicts respected; bad verdict fails closed", async () => {
