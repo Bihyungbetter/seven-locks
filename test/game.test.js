@@ -95,6 +95,11 @@ test("groq client: request shape, 429 mapping, JSON-mode fallback", async () => 
   await kimi.chat([{ role: "user", content: "hi" }]);
   assert.equal(sent.at(-1).reasoning_effort, undefined);
 
+  const gpt = groqLLM({ apiKey: "k", model: "openai/gpt-oss-20b", fetchImpl: async (u, init) => { sent.push(JSON.parse(init.body)); return ok('{"leak": false}'); } });
+  await gpt.chat([{ role: "user", content: "x" }], { json: true, maxTokens: 40 });
+  assert.equal(sent.at(-1).reasoning_effort, "low");
+  assert.equal(sent.at(-1).max_completion_tokens, 440, "room for reasoning on top of the answer");
+
   const busy = groqLLM({ apiKey: "k", fetchImpl: async () => ({ ok: false, status: 429, headers: { get: () => "3" }, text: async () => "" }) });
   await assert.rejects(busy.chat([{ role: "user", content: "x" }]), { code: "rate_limited" });
 
