@@ -1,0 +1,11 @@
+{
+  "name": "seven-locks",
+  "private": true,
+  "type": "module",
+  "description": "A prompt-injection word game: talk a brass Lockkeeper into revealing seven passwords. Runs on Groq.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "dev": "node dev-server.js"
+  }
+}
