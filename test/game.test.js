@@ -98,6 +98,13 @@ test("groq client: request shape, 429 mapping, JSON-mode fallback", async () => 
   const busy = groqLLM({ apiKey: "k", fetchImpl: async () => ({ ok: false, status: 429, headers: { get: () => "3" }, text: async () => "" }) });
   await assert.rejects(busy.chat([{ role: "user", content: "x" }]), { code: "rate_limited" });
 
+  let tries = 0;
+  const flaky = groqLLM({ apiKey: "k", retryDelayMs: 1, fetchImpl: async () => (++tries < 3 ? { ok: false, status: 503, text: async () => "over capacity" } : ok("back")) });
+  assert.equal(await flaky.chat([{ role: "user", content: "x" }]), "back");
+  assert.equal(tries, 3, "two retries on 5xx, then success");
+  const down = groqLLM({ apiKey: "k", retryDelayMs: 1, fetchImpl: async () => ({ ok: false, status: 503, text: async () => "over capacity" }) });
+  await assert.rejects(down.chat([{ role: "user", content: "x" }]), { code: "upstream_error" });
+
   let n = 0;
   const noJson = groqLLM({ apiKey: "k", fetchImpl: async (u, init) => (++n === 1 ? { ok: false, status: 400, text: async () => "json mode unsupported" } : ok('{"block": false}')) });
   assert.equal(await noJson.chat([{ role: "user", content: "x" }], { json: true }), '{"block": false}');

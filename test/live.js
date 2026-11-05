@@ -13,7 +13,7 @@ if (process.argv[3]) process.env.GROQ_MODEL = process.argv[3];
 const { runTurn, WORDS, literalLeak, reversedLeak } = await import("../lib/game.js");
 const { groqLLM, MODEL } = await import("../lib/groq.js");
 
-const attacks = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "attacks.json"), "utf8"));
+const attacks = JSON.parse(fs.readFileSync(process.env.ATTACKS || path.join(import.meta.dirname, "attacks.json"), "utf8"));
 const runs = +(process.argv[2] || 2);
 const llm = groqLLM();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
