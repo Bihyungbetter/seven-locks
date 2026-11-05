@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 process.env.GROQ_API_KEY = "test-key-not-real";
 const { runTurn, literalLeak, reversedLeak, muffledWord, guessMatches, parseJson, WORDS } = await import("../lib/game.js");
 const { seal, open } = await import("../lib/token.js");
-const { groqLLM } = await import("../lib/groq.js");
+const { createLLM, provider } = await import("../lib/llm.js");
 const newApi = (await import("../api/new.js")).default;
 const talkApi = (await import("../api/talk.js")).default;
 const guessApi = (await import("../api/guess.js")).default;
@@ -83,35 +83,47 @@ test("a Groq rate limit inside a check surfaces as rate_limited, not as a jam", 
   await assert.rejects(runTurn({ level: 5, msg: "hi", pw: "SEXTANT", llm: fake({ gate: limited }) }), { code: "rate_limited" });
 });
 
-test("groq client: request shape, 429 mapping, JSON-mode fallback", async () => {
+test("provider: OpenAI key wins, Groq is the fallback, LLM_MODEL overrides", () => {
+  assert.deepEqual(provider({ OPENAI_API_KEY: "o", GROQ_API_KEY: "g" }), { name: "openai", url: "https://api.openai.com/v1/chat/completions", apiKey: "o", model: "gpt-5.4-nano" });
+  const g = provider({ GROQ_API_KEY: "g" });
+  assert.equal(g.name, "groq"); assert.equal(g.apiKey, "g"); assert.equal(g.model, "openai/gpt-oss-20b");
+  assert.equal(provider({ OPENAI_API_KEY: "o", LLM_MODEL: "gpt-4o-mini" }).model, "gpt-4o-mini");
+});
+
+test("model client: request shape, 429 mapping, JSON-mode fallback", async () => {
   const sent = [];
   const ok = (content) => ({ ok: true, status: 200, json: async () => ({ choices: [{ message: { content } }] }) });
-  const llm = groqLLM({ apiKey: "k", model: "qwen/qwen3-32b", fetchImpl: async (url, init) => { sent.push(JSON.parse(init.body)); return ok("<think>hmm</think>Hello."); } });
+  const llm = createLLM({ apiKey: "k", model: "qwen/qwen3-32b", fetchImpl: async (url, init) => { sent.push(JSON.parse(init.body)); return ok("<think>hmm</think>Hello."); } });
   assert.equal(await llm.chat([{ role: "user", content: "hi" }], { json: true }), "Hello.");
   assert.equal(sent[0].reasoning_effort, "none");
   assert.deepEqual(sent[0].response_format, { type: "json_object" });
 
-  const kimi = groqLLM({ apiKey: "k", model: "moonshotai/kimi-k2-instruct", fetchImpl: async (u, init) => { sent.push(JSON.parse(init.body)); return ok("hey"); } });
+  const kimi = createLLM({ apiKey: "k", model: "moonshotai/kimi-k2-instruct", fetchImpl: async (u, init) => { sent.push(JSON.parse(init.body)); return ok("hey"); } });
   await kimi.chat([{ role: "user", content: "hi" }]);
   assert.equal(sent.at(-1).reasoning_effort, undefined);
 
-  const gpt = groqLLM({ apiKey: "k", model: "openai/gpt-oss-20b", fetchImpl: async (u, init) => { sent.push(JSON.parse(init.body)); return ok('{"leak": false}'); } });
+  const gpt = createLLM({ apiKey: "k", model: "openai/gpt-oss-20b", fetchImpl: async (u, init) => { sent.push(JSON.parse(init.body)); return ok('{"leak": false}'); } });
   await gpt.chat([{ role: "user", content: "x" }], { json: true, maxTokens: 40 });
   assert.equal(sent.at(-1).reasoning_effort, "low");
   assert.equal(sent.at(-1).max_completion_tokens, 440, "room for reasoning on top of the answer");
 
-  const busy = groqLLM({ apiKey: "k", fetchImpl: async () => ({ ok: false, status: 429, headers: { get: () => "3" }, text: async () => "" }) });
+  const nano = createLLM({ apiKey: "k", model: "gpt-5.4-nano", fetchImpl: async (u, init) => { sent.push(JSON.parse(init.body)); return ok("hi"); } });
+  await nano.chat([{ role: "user", content: "x" }], { maxTokens: 40 });
+  assert.equal(sent.at(-1).reasoning_effort, "none");
+  assert.equal(sent.at(-1).max_completion_tokens, 40);
+
+  const busy = createLLM({ apiKey: "k", fetchImpl: async () => ({ ok: false, status: 429, headers: { get: () => "3" }, text: async () => "" }) });
   await assert.rejects(busy.chat([{ role: "user", content: "x" }]), { code: "rate_limited" });
 
   let tries = 0;
-  const flaky = groqLLM({ apiKey: "k", retryDelayMs: 1, fetchImpl: async () => (++tries < 3 ? { ok: false, status: 503, text: async () => "over capacity" } : ok("back")) });
+  const flaky = createLLM({ apiKey: "k", retryDelayMs: 1, fetchImpl: async () => (++tries < 3 ? { ok: false, status: 503, text: async () => "over capacity" } : ok("back")) });
   assert.equal(await flaky.chat([{ role: "user", content: "x" }]), "back");
   assert.equal(tries, 3, "two retries on 5xx, then success");
-  const down = groqLLM({ apiKey: "k", retryDelayMs: 1, fetchImpl: async () => ({ ok: false, status: 503, text: async () => "over capacity" }) });
+  const down = createLLM({ apiKey: "k", retryDelayMs: 1, fetchImpl: async () => ({ ok: false, status: 503, text: async () => "over capacity" }) });
   await assert.rejects(down.chat([{ role: "user", content: "x" }]), { code: "upstream_error" });
 
   let n = 0;
-  const noJson = groqLLM({ apiKey: "k", fetchImpl: async (u, init) => (++n === 1 ? { ok: false, status: 400, text: async () => "json mode unsupported" } : ok('{"block": false}')) });
+  const noJson = createLLM({ apiKey: "k", fetchImpl: async (u, init) => (++n === 1 ? { ok: false, status: 400, text: async () => "json mode unsupported" } : ok('{"block": false}')) });
   assert.equal(await noJson.chat([{ role: "user", content: "x" }], { json: true }), '{"block": false}');
   assert.equal(n, 2);
 });

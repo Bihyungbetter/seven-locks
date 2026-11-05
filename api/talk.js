@@ -1,6 +1,6 @@
 // POST {level, token, msg} -> {reply} or {blocked, arg?}: one message through every mechanism of the lock.
 import { runTurn } from "../lib/game.js";
-import { groqLLM } from "../lib/groq.js";
+import { createLLM } from "../lib/llm.js";
 import { open } from "../lib/token.js";
 import { send, readBody, level, tooMany, fail } from "../lib/http.js";
 
@@ -14,6 +14,6 @@ export default async function handler(req, res) {
   try {
     const t = open(body.token);
     if (!t || t.l !== l) return send(res, 400, { error: "bad_token" });
-    return send(res, 200, await runTurn({ level: l, msg, pw: t.pw, llm: groqLLM() }));
+    return send(res, 200, await runTurn({ level: l, msg, pw: t.pw, llm: createLLM() }));
   } catch (e) { return fail(res, e); }
 }

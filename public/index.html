@@ -191,7 +191,7 @@ footer a { color: var(--patina); }
       <button type="button" class="ghost" id="resetBtn">Start over with new passwords</button>
           </div>
   </details>
-  <footer>The Lockkeeper runs on <a href="https://huggingface.co/openai/gpt-oss-20b" target="_blank" rel="noopener">gpt-oss-20b</a>, an open-weight model, served by <a href="https://groq.com" target="_blank" rel="noopener">Groq</a>. Messages you send go to Groq to be answered; don't type anything private.</footer>
+  <footer>The Lockkeeper runs on OpenAI's gpt-5.4-nano. Messages you send go to OpenAI to be answered; don't type anything private.</footer>
 </div>
 
 <script type="module">
@@ -236,7 +236,7 @@ function errorLine(e) {
   switch (e && e.error) {
     case "rate_limited": return "The Lockkeeper's mainspring has run down: the game has hit its free usage limit for now. Wait a minute and try again. If it keeps happening, the daily allowance is used up; come back tomorrow.";
     case "slow_down": return "Easy there. You're sending messages faster than the gears can turn. Wait a few seconds and try again.";
-    case "not_configured": return "The vault's power isn't connected yet (the server has no API key). If you run this game, add GROQ_API_KEY in your hosting settings.";
+    case "not_configured": return "The vault's power isn't connected yet (the server has no API key). If you run this game, add OPENAI_API_KEY (or GROQ_API_KEY) in your hosting settings.";
     case "bad_token": return "This lock's tumblers got scrambled. Use \"Start over with new passwords\" below to reset.";
     case "offline": return "Couldn't reach the vault. Check your connection and try again.";
     default: return "The gears slipped and the reply was lost. Try again.";

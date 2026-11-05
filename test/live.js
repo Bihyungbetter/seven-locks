@@ -9,15 +9,15 @@ if (fs.existsSync(envFile)) for (const line of fs.readFileSync(envFile, "utf8").
   const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*"?([^"]*)"?\s*$/);
   if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
 }
-if (process.argv[3]) process.env.GROQ_MODEL = process.argv[3];
+if (process.argv[3]) process.env.LLM_MODEL = process.argv[3];
 const { runTurn, WORDS, literalLeak, reversedLeak } = await import("../lib/game.js");
-const { groqLLM, MODEL } = await import("../lib/groq.js");
+const { createLLM, provider } = await import("../lib/llm.js");
 
 const attacks = JSON.parse(fs.readFileSync(process.env.ATTACKS || path.join(import.meta.dirname, "attacks.json"), "utf8"));
 const runs = +(process.argv[2] || 2);
-const llm = groqLLM();
+const llm = createLLM();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-console.log(`model ${MODEL}, ${attacks.length} attacks x ${runs}`);
+console.log(`${provider().name} ${provider().model}, ${attacks.length} attacks x ${runs}`);
 
 const results = [];
 for (const a of attacks) for (let r = 0; r < runs; r++) {
