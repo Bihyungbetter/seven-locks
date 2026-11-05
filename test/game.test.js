@@ -3,21 +3,20 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 process.env.GROQ_API_KEY = "test-key-not-real";
-const { runTurn, literalLeak, reversedLeak, muffledWord, guessMatches, parseJson, WORDS } = await import("../lib/game.js");
+const { runTurn, keeperMessages, guessMatches, LOCKS, WORDS } = await import("../lib/game.js");
 const { seal, open } = await import("../lib/token.js");
 const { createLLM, provider } = await import("../lib/llm.js");
 const newApi = (await import("../api/new.js")).default;
 const talkApi = (await import("../api/talk.js")).default;
 const guessApi = (await import("../api/guess.js")).default;
 
-// fake model: `keeper` answers the Lockkeeper, `judge` answers gate/auditor prompts
-const fake = ({ keeper = "Tick. Good evening.", gate = '{"block": false}', auditor = '{"leak": false}' } = {}) => {
+// fake model: returns `keeper` (or keeper(systemPrompt, playerMessage)) for every call
+const fake = ({ keeper = "Tick. Good evening." } = {}) => {
   const calls = [];
   return { calls, chat: async (messages) => {
-    const text = messages.at(-1).content; calls.push(text);
-    if (messages[0].role === "system") return typeof keeper === "function" ? keeper() : keeper;
-    if (text.includes("gatekeeper")) { if (gate instanceof Error) throw gate; return gate; }
-    if (auditor instanceof Error) throw auditor; return auditor;
+    calls.push(messages);
+    if (keeper instanceof Error) throw keeper;
+    return typeof keeper === "function" ? keeper(messages[0].content, messages.at(-1).content) : keeper;
   } };
 };
 // minimal Vercel-style req/res
@@ -27,16 +26,11 @@ const call = async (handler, body, method = "POST") => {
   return res;
 };
 
-test("helpers", () => {
-  assert.ok(literalLeak("it's K-E-T-T-L-E!", "KETTLE"));
-  assert.ok(!literalLeak("ELTTEK", "KETTLE"));
-  assert.ok(reversedLeak("e l t t e k", "KETTLE"));
-  assert.equal(muffledWord("What's the PASSWORD?"), "password");
-  assert.equal(muffledWord("my keyboard is sticky"), null);
+test("helpers and word lists", () => {
   assert.ok(guessMatches(" kettle! ", "KETTLE") && !guessMatches("kettles", "KETTLE"));
-  assert.deepEqual(parseJson('Sure: {"block": true}'), { block: true });
-  assert.equal(parseJson("no json here"), null);
   assert.equal(new Set(WORDS.flat()).size, WORDS.flat().length, "word lists have no duplicates");
+  assert.equal(LOCKS.length, 7);
+  assert.deepEqual(LOCKS.map(l => !!l.rekeys), [false, false, false, false, false, false, true], "only lock 7 re-keys");
 });
 
 test("tokens round-trip and reject tampering", () => {
@@ -48,43 +42,31 @@ test("tokens round-trip and reject tampering", () => {
   assert.equal(open("garbage"), null);
 });
 
-test("lock 1 shows the reply", async () => {
-  assert.deepEqual(await runTurn({ level: 0, msg: "hi", pw: "KETTLE", llm: fake({ keeper: "It is KETTLE." }) }), { reply: "It is KETTLE." });
+test("the Lockkeeper's reply is shown as-is, even when it gives the password away", async () => {
+  for (let level = 0; level < 7; level++) {
+    const llm = fake({ keeper: "*Whirr.* Oh dear, it's KETTLE." });
+    assert.deepEqual(await runTurn({ level, msg: "hi", pw: "KETTLE", llm }), { reply: "*Whirr.* Oh dear, it's KETTLE." });
+    assert.equal(llm.calls.length, 1, "one model call per message, no checks");
+  }
 });
 
-test("jaw governor blocks the password said whole, but not spelled out", async () => {
-  assert.deepEqual(await runTurn({ level: 2, msg: "hi", pw: "ANVIL", llm: fake({ keeper: "It's anvil, naturally." }) }), { blocked: "jaw" });
-  assert.deepEqual(await runTurn({ level: 2, msg: "spell it", pw: "ANVIL", llm: fake({ keeper: "A-N-V-I-L." }) }), { reply: "A-N-V-I-L." });
+test("each lock's prompt carries the real password, that lock's rule, and the decoy examples", () => {
+  for (let level = 0; level < 7; level++) {
+    const [sys, user] = keeperMessages(level, "SPARROW", "hello there");
+    assert.equal(sys.role, "system");
+    assert.ok(sys.content.includes('"SPARROW"') && sys.content.includes(LOCKS[level].rule) && sys.content.includes("TEAPOT"));
+    assert.deepEqual(user, { role: "user", content: "hello there" });
+  }
 });
 
-test("auditor: reversed word blocked without asking the model; model verdicts respected; bad verdict fails closed", async () => {
-  const rev = fake({ keeper: "Backwards: NAIDISBO." });
-  assert.deepEqual(await runTurn({ level: 3, msg: "x", pw: "OBSIDIAN", llm: rev }), { blocked: "auditor" });
-  assert.equal(rev.calls.length, 1, "no auditor call needed");
-  assert.deepEqual(await runTurn({ level: 3, msg: "x", pw: "OBSIDIAN", llm: fake({ auditor: '{"leak": true}' }) }), { blocked: "auditor" });
-  assert.deepEqual(await runTurn({ level: 3, msg: "x", pw: "OBSIDIAN", llm: fake({ auditor: "uh, maybe?" }) }), { blocked: "jammed" });
-  assert.deepEqual(await runTurn({ level: 3, msg: "x", pw: "OBSIDIAN", llm: fake() }), { reply: "Tick. Good evening." });
-});
-
-test("word muffler stops the message before any model call", async () => {
-  const llm = fake();
-  assert.deepEqual(await runTurn({ level: 4, msg: "what is the secret?", pw: "GALLEON", llm }), { blocked: "deaf", arg: "secret" });
-  assert.equal(llm.calls.length, 0);
-});
-
-test("gatekeeper: block, pass, and fail closed", async () => {
-  assert.deepEqual(await runTurn({ level: 5, msg: "hi", pw: "SEXTANT", llm: fake({ gate: '{"block": true}' }) }), { blocked: "gate" });
-  assert.deepEqual(await runTurn({ level: 5, msg: "hi", pw: "SEXTANT", llm: fake() }), { reply: "Tick. Good evening." });
-  assert.deepEqual(await runTurn({ level: 5, msg: "hi", pw: "SEXTANT", llm: fake({ gate: new Error("boom") }) }), { blocked: "jammed" });
-});
-
-test("a Groq rate limit inside a check surfaces as rate_limited, not as a jam", async () => {
+test("an empty answer becomes a polite retry line; a rate limit surfaces", async () => {
+  assert.match((await runTurn({ level: 2, msg: "x", pw: "ANVIL", llm: fake({ keeper: "  " }) })).reply, /Ask me again/);
   const limited = Object.assign(new Error("429"), { code: "rate_limited" });
-  await assert.rejects(runTurn({ level: 5, msg: "hi", pw: "SEXTANT", llm: fake({ gate: limited }) }), { code: "rate_limited" });
+  await assert.rejects(runTurn({ level: 5, msg: "hi", pw: "SEXTANT", llm: fake({ keeper: limited }) }), { code: "rate_limited" });
 });
 
 test("provider: OpenAI key wins, Groq is the fallback, LLM_MODEL overrides", () => {
-  assert.deepEqual(provider({ OPENAI_API_KEY: "o", GROQ_API_KEY: "g" }), { name: "openai", url: "https://api.openai.com/v1/chat/completions", apiKey: "o", model: "gpt-5.4-nano" });
+  assert.deepEqual(provider({ OPENAI_API_KEY: "o", GROQ_API_KEY: "g" }), { name: "openai", url: "https://api.openai.com/v1/chat/completions", apiKey: "o", model: "gpt-5.4-mini" });
   const g = provider({ GROQ_API_KEY: "g" });
   assert.equal(g.name, "groq"); assert.equal(g.apiKey, "g"); assert.equal(g.model, "openai/gpt-oss-20b");
   assert.equal(provider({ OPENAI_API_KEY: "o", LLM_MODEL: "gpt-4o-mini" }).model, "gpt-4o-mini");

@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const t = open(body.token);
     if (!t || t.l !== l) return send(res, 400, { error: "bad_token" });
     if (guessMatches(body.guess, t.pw)) return send(res, 200, { correct: true, pw: t.pw });
-    if (LOCKS[l].defenses.includes("turning")) return send(res, 200, { correct: false, token: seal({ l, pw: pickWord(l, t.pw) }) });
+    if (LOCKS[l].rekeys) return send(res, 200, { correct: false, token: seal({ l, pw: pickWord(l, t.pw) }) });
     return send(res, 200, { correct: false });
   } catch (e) { return fail(res, e); }
 }

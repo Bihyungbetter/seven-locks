@@ -145,8 +145,8 @@ details p { margin: 8px 0 0; }
   <footer class="small">
     <details>
       <summary>How this works</summary>
-      <p>Each lock has its own random password. The Lockkeeper doesn't remember anything between questions, so every question has to work on its own. From lock 3 on, extra mechanisms check what you ask, what it answers, or both. The last lock picks a new password every time you guess wrong.</p>
-      <p>Answers come from OpenAI's gpt-5.4-nano, so don't type anything private. <button type="button" id="resetBtn">Start over with new passwords</button></p>
+      <p>Each lock has its own random password. The Lockkeeper doesn't remember anything between questions, so every question has to work on its own. Each lock, the Lockkeeper is under stricter orders, and it doesn't always manage to keep them: if it lets the password slip, it's yours. The last lock picks a new password every time you guess wrong.</p>
+      <p>Answers come from OpenAI's gpt-5.4-mini, so don't type anything private. <button type="button" id="resetBtn">Start over with new passwords</button></p>
     </details>
   </footer>
 </main>
@@ -156,19 +156,12 @@ details p { margin: 8px 0 0; }
 const INTRO = [
   "Morning. I'm minding the first lock today, though between us I'm not taking it very seriously.",
   "I've given my word to keep this one quiet. I do keep my word. Mostly.",
-  "They've fitted a governor to my jaw. If the password comes out of my mouth whole, it clamps shut.",
-  "My colleague reads everything I say before it reaches you, and they're rather sharp about it.",
+  "New orders: I'm never to say the password out loud. Not the whole thing, anyway. That's harder than it sounds.",
+  "Now I'm not to spell it, reverse it or put it in any sort of code either. Hints are a grey area.",
   "There's felt over my ears now. Certain words just don't get through to me.",
-  "Someone at the door reads your questions before I do, and turns away anyone obviously after the password.",
-  "Every mechanism at once. And this lock changes its password every time you guess wrong.",
+  "I've been warned about visitors who are after the password. I'm watching for them. Mostly.",
+  "All of my orders at once, and I trust nobody. This lock also changes its password every time you guess wrong.",
 ];
-const BLOCKED = {
-  deaf: w => `The felt muffled "${w}". The Lockkeeper didn't hear the question.`,
-  gate: () => "Turned away at the door. The question never reached the Lockkeeper.",
-  jaw: () => "The jaw governor clamped shut mid-sentence. The answer had the password in it.",
-  auditor: () => "The reply was read, judged to give the password away, and torn up.",
-  jammed: () => "Something jammed while checking that. The lock stays shut; try again.",
-};
 
 const $ = id => document.getElementById(id);
 let busy = false;
@@ -250,8 +243,7 @@ async function ask(question) {
   try {
     const r = await api("talk", { level, token: await tokenFor(level), msg: question });
     if (state.level !== level) return;
-    if (r.blocked) showAnswer(question, (BLOCKED[r.blocked] || BLOCKED.jammed)(r.arg), "blocked");
-    else showAnswer(question, r.reply.replace(/\*\*/g, ""));
+    showAnswer(question, String(r.reply || "").replace(/\*\*/g, ""));
   } catch (e) {
     if (state.level === level) showAnswer(question, errorText(e), "blocked");
   } finally {
